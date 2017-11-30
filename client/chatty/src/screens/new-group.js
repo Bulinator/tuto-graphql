@@ -5,7 +5,7 @@ import { Text, View, Platform, Image, ActivityIndicator } from 'react-native';
 import { graphql, compose } from 'react-apollo';
 import AlphabetListView from 'react-native-alphabetlistview';
 import update from 'immutability-helper';
-import { Icon } from 'react-native-elements';
+import { Icon, Button } from 'react-native-elements';
 import ColorHelpers from '../helpers/ColorHelpers';
 
 import SelectedUserList from '../components/selected-user-list';
@@ -163,6 +163,12 @@ class NewGroup extends Component {
         alignSelf: 'flex-start',
         color: ColorHelpers.txtHeaderColor,
       },
+      headerRight: (
+        isReady ? <Button
+          title="Next"
+          onPress={state.params.finalizeGroup}
+        /> : undefined
+      ),
     };
   };
 

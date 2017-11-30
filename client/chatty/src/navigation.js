@@ -10,6 +10,7 @@ import {
 
 import Groups from './screens/groups';
 import NewGroup from './screens/new-group';
+import FinalizeGroup from './screens/finalize-group';
 import Messages from './screens/messages';
 
 const styles = {
@@ -62,6 +63,7 @@ const AppNavigator = StackNavigator({
   Main: { screen: MainScreenNavigator },
   Messages: { screen: Messages },
   NewGroup: { screen: NewGroup },
+  FinalizeGroup: { screen: FinalizeGroup },
 }, {
   mode: 'modal', // has no effect on android
 });

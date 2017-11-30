@@ -9,6 +9,7 @@ import {
 } from 'react-navigation';
 
 import Groups from './screens/groups';
+import NewGroup from './screens/new-group';
 import Messages from './screens/messages';
 
 const styles = {
@@ -60,6 +61,7 @@ const MainScreenNavigator = TabNavigator({
 const AppNavigator = StackNavigator({
   Main: { screen: MainScreenNavigator },
   Messages: { screen: Messages },
+  NewGroup: { screen: NewGroup },
 }, {
   mode: 'modal', // has no effect on android
 });

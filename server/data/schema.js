@@ -48,6 +48,7 @@ export const Schema = [`
     createMessage(
       text: String!, userId: Int!, groupId: Int!
     ): Message
+    createGroup(name: String!, userIds: [Int], userId: Int!): Group
   }
 
   # return query

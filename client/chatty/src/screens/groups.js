@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import { connect } from 'react-redux';
 import { graphql, compose } from 'react-apollo';
+import { Icon } from 'react-native-elements';
 import { USER_QUERY } from '../graphql/user.query';
+import ColorHelpers from '../helpers/ColorHelpers';
 
 const styles = {
   container: {
-    backgroundColor: 'white',
+    backgroundColor: ColorHelpers.bgColor,
     flex: 1,
   },
   loading: {
@@ -73,11 +75,25 @@ Group.propTypes = {
 };
 
 class Groups extends Component {
-  static navigationOptions = {
-    title: 'Chats',
-    headerStyle: { marginTop: (Platform.OS === 'android') ? 24 : 0 },
-    headerTitleStyle: { alignSelf: 'center' },
-  };
+  static navigationOptions = ({ navigation }) => ({
+    title: 'Chats Dev App',
+    headerStyle: {
+      marginTop: (Platform.OS === 'android') ? 24 : 0,
+      backgroundColor: ColorHelpers.bgHeaderColor,
+      paddingRight: 5,
+    },
+    headerTitleStyle: {
+      alignSelf: 'flex-start',
+      color: ColorHelpers.txtHeaderColor,
+    },
+    headerRight:
+      <Icon
+        name="plus-square-o"
+        color={'#fff'}
+        type='font-awesome'
+        onPress={() => navigation.navigate('NewGroup')}
+      />,
+  });
 
   constructor(props) {
     super(props);
@@ -92,6 +108,17 @@ class Groups extends Component {
     // props.navigation.state.paramas in Message
     navigate('Messages', { groupId: group.id, title: group.name });
   }
+
+  renderSeparator = () => {
+    return (
+      <View
+        style={{
+          height: 1,
+          backgroundColor: 'red',
+        }}
+      />
+    );
+  };
 
   renderItem = ({ item }) => <Group group={item} goToMessages={this.goToMessages} />
 
@@ -112,6 +139,7 @@ class Groups extends Component {
         <FlatList
           data={user.groups}
           keyExtractor={this.keyExtractor}
+          ItemSeparatorComponent={this.renderSeparator}
           renderItem={this.renderItem}
         />
       </View>

@@ -25,6 +25,19 @@ export const Resolvers = {
         groupId,
       });
     },
+    createGroup(_, { name, userIds, userId }) {
+      return User.findOne({ where: { id: userId } })
+        .then(user => user.getFriends({ where: { id: { $in: userIds } } })
+          .then(friends => Group.create({
+            name,
+            users: [user, ...friends],
+          })
+            .then(group => group.addUsers([user, ...friends])
+              .then(() => group),
+            ),
+          ),
+        );
+    },
   },
   Group: {
     users(group) {

@@ -7,11 +7,13 @@ import {
   Text,
   TouchableHighlight,
   View,
+  Image,
   Platform,
 } from 'react-native';
 import { connect } from 'react-redux';
 import { graphql, compose } from 'react-apollo';
 import { Icon } from 'react-native-elements';
+import moment from 'moment';
 import { USER_QUERY } from '../graphql/user.query';
 import ColorHelpers from '../helpers/ColorHelpers';
 
@@ -38,6 +40,31 @@ const styles = {
     fontWeight: 'bold',
     flex: 0.7,
   },
+  groupTextContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    paddingLeft: 6,
+  },
+  groupText: {
+    color: '#8c8c8c',
+  },
+  groupImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+  groupTitleContainer: {
+    flexDirection: 'row',
+  },
+  groupLastUpdated: {
+    flex: 0.3,
+    color: '#8c8c8c',
+    fontSize: 11,
+    textAlign: 'right',
+  },
+  groupUsername: {
+    paddingVertical: 4,
+  },
   warning: {
     textAlign: 'center',
     padding: 12,
@@ -49,6 +76,18 @@ const fakeData = () => _.times(100, i => ({
   name: `Group ${i}`,
 }));
 
+// format createdAt with moment
+const formatCreatedAt = createdAt => moment(createdAt).calendar(null, {
+  sameDay: '[Today]',
+  nextDay: '[Tomorrow]',
+  nextWeek: 'dddd',
+  lastDay: '[Yesterday]',
+  lastWeek: 'dddd',
+  sameElse: 'DD/MM/YYYY',
+});
+
+const LOGO_URL = 'https://www.shareicon.net/data/2016/08/01/640324_logo_512x512.png';
+
 class Group extends Component {
   constructor(props) {
     super(props);
@@ -56,14 +95,40 @@ class Group extends Component {
     this.goToMessages = this.props.goToMessages.bind(this, this.props.group);
   }
   render() {
-    const { id, name } = this.props.group;
+    const { id, name, messages } = this.props.group;
     return (
       <TouchableHighlight
         key={id}
         onPress={this.goToMessages}
       >
         <View style={styles.groupContainer}>
-          <Text style={styles.groupName}>{`${name}`}</Text>
+          <Image
+            style={styles.groupImage}
+            source={{ uri: LOGO_URL }}
+          />
+
+          <View style={styles.groupTextContainer}>
+            <View style={styles.groupTitleContainer}>
+              <Text style={styles.groupName}>{`${name}`}</Text>
+              <Text style={styles.groupLastUpdated}>
+                {messages.edges.length ?
+                  formatCreatedAt(messages.edges[0].node.createdAt) : ''}
+              </Text>
+            </View>
+            <Text style={styles.groupUsername}>
+              {messages.edges.length ?
+                `${messages.edges[0].node.from.username}:` : ''}
+            </Text>
+            <Text style={styles.groupText} numberOfLines={1}>
+              {messages.edges.length ? messages.edges[0].node.text : ''}
+            </Text>
+          </View>
+          <Icon
+            name="angle-right"
+            color={'#8c8c8c'}
+            type="font-awesome"
+            size={24}
+          />
         </View>
       </TouchableHighlight>
     );
@@ -75,6 +140,12 @@ Group.propTypes = {
   group: PropTypes.shape({
     id: PropTypes.number,
     name: PropTypes.string,
+  }),
+  messages: PropTypes.shape({
+    edges: PropTypes.arrayOf(PropTypes.shape({
+      cursor: PropTypes.string,
+      node: PropTypes.object,
+    })),
   }),
 };
 
@@ -102,6 +173,12 @@ class Groups extends Component {
   constructor(props) {
     super(props);
     this.goToMessages = this.goToMessages.bind(this);
+    this.onRefresh = this.onRefresh.bind(this);
+  }
+
+  onRefresh() {
+    this.props.refetch();
+    // faking unauthorized status
   }
 
   keyExtractor = item => item.id;
@@ -127,7 +204,7 @@ class Groups extends Component {
   renderItem = ({ item }) => <Group group={item} goToMessages={this.goToMessages} />
 
   render() {
-    const { loading, user } = this.props;
+    const { loading, user, networkStatus } = this.props;
     // render loading placeholder while we fetch messages
     if (loading || !user) {
       return (
@@ -146,6 +223,7 @@ class Groups extends Component {
     }
 
     // render list og groups for user
+    // networkStatus == 4 means data are still loading
     return (
       <View style={styles.container}>
         <FlatList
@@ -153,6 +231,8 @@ class Groups extends Component {
           keyExtractor={this.keyExtractor}
           ItemSeparatorComponent={this.renderSeparator}
           renderItem={this.renderItem}
+          onRefresh={this.onRefresh}
+          refreshing={networkStatus === 4}
         />
       </View>
     );
@@ -164,6 +244,8 @@ Groups.propTypes = {
     navigate: PropTypes.func,
   }),
   loading: PropTypes.bool,
+  networkStatus: PropTypes.number,
+  refetch: PropTypes.func,
   user: PropTypes.shape({
     id: PropTypes.number.isRequired,
     email: PropTypes.string.isRequired,
@@ -176,8 +258,8 @@ Groups.propTypes = {
 
 const userQuery = graphql(USER_QUERY, {
   options: () => ({ variables: { id: 1 } }), // fake user for now
-  props: ({ data: { loading, user } }) => ({
-    loading, user,
+  props: ({ data: { loading, networkStatus, refetch, user } }) => ({
+    loading, networkStatus, refetch, user,
   }),
 });
 

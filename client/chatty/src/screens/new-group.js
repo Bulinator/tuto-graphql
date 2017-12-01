@@ -103,15 +103,15 @@ class Cell extends Component {
     this.toggle = this.toggle.bind(this);
 
     this.state = {
-      isSelected: [], //props.isSelected(props.item),
+      isSelected: props.isSelected(props.item),
     };
   }
 
   componentWillReceiveProps(nextProps) {
-    console.log('nextProps', nextProps);
-    //this.setState({
-    //  isSelected: nextProps.isSelected(nextProps.item)
-    //});
+    //console.log('nextProps', nextProps);
+    this.setState({
+      isSelected: nextProps.isSelected(nextProps.item)
+    });
   }
 
   toggle() {
@@ -199,7 +199,7 @@ class NewGroup extends Component {
     const state = {};
     if (nextProps.user && nextProps.user.friends && nextProps.user !== this.props.user) {
       state.friends = sortObject(
-        _.groupBy(nextProps.user.friends, friend => friend.username.charAt(0).toUpperCase()),
+        _.groupBy(nextProps.user.friends, friend => friend.username.charAt(0).toUpperCase())
       );
     }
 

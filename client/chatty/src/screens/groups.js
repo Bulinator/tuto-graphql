@@ -38,6 +38,10 @@ const styles = {
     fontWeight: 'bold',
     flex: 0.7,
   },
+  warning: {
+    textAlign: 'center',
+    padding: 12,
+  },
 };
 
 const fakeData = () => _.times(100, i => ({
@@ -129,6 +133,14 @@ class Groups extends Component {
       return (
         <View style={[styles.loading, styles.container]}>
           <ActivityIndicator />
+        </View>
+      );
+    }
+
+    if (user && !user.groups.length) {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.warning}>You do not have any groups.</Text>
         </View>
       );
     }

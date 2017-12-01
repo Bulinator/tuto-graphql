@@ -5,16 +5,24 @@ import {
   Platform,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Image,
+  Text,
+  TouchableOpacity,
 } from 'react-native';
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import randomColor from 'randomcolor';
 import { graphql, compose } from 'react-apollo';
+import gql from 'graphql-tag';
+import { Icon } from 'react-native-elements';
 
 import Message from '../components/messages';
 import MessageInput from '../components/messages-input';
 import GROUP_QUERY from '../graphql/group.query';
 import CREATE_MESSAGE_MUTATION from '../graphql/create-message.mutation';
+import UPDATE_GROUP_MUTATION from '../graphql/update-group.mutation';
+
+import ColorHelpers from '../helpers/ColorHelpers';
 
 const styles = {
   container: {
@@ -26,7 +34,24 @@ const styles = {
   loading: {
     justifyContent: 'center',
   },
+  titleWrapper: {
+    alignItems: 'center',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+  },
+  title: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleImage: {
+    marginRight: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
 };
+const LOGO_URL = 'https://www.shareicon.net/data/2016/08/01/640324_logo_512x512.png';
 
 const fakeData = () => _.times(100, i => ({
   // every message will have a different color
@@ -50,14 +75,32 @@ function isDuplicateMessage(newMessage, existingMessages) {
 
 class Messages extends Component {
   static navigationOptions = ({ navigation }) => {
-    const { state } = navigation;
+    const { state, navigate } = navigation;
+
+    const goToGroupDetails = navigate.bind(this, 'GroupDetails', {
+      id: state.params.groupId,
+      title: state.params.title,
+    });
+
     return {
       title: state.params.title,
       headerStyle: {
         marginTop: (Platform.OS === 'android') ? 24 : 0,
-        paddingRight: 45,
+        paddingRight: 10,
+        paddingLeft: 5,
+        backgroundColor: ColorHelpers.bgHeaderColor,
       },
-      headerTitleStyle: { alignSelf: 'center' },
+      headerTitleStyle: {
+        alignSelf: 'flex-start',
+        color: ColorHelpers.txtHeaderColor,
+      },
+      headerRight:
+        <Icon
+          name="cog"
+          color={'#000'}
+          type='font-awesome'
+          onPress={goToGroupDetails}
+        />,
     };
   };
 
@@ -141,6 +184,7 @@ class Messages extends Component {
 Messages.propTypes = {
   createMessage: PropTypes.func,
   navigation: PropTypes.shape({
+    navigate: PropTypes.func,
     state: PropTypes.shape({
       params: PropTypes.shape({
         groupId: PropTypes.number,
@@ -240,7 +284,32 @@ const createMessageMutation = graphql(CREATE_MESSAGE_MUTATION, {
   }),
 });
 
+const updateGroupMutation = graphql(UPDATE_GROUP_MUTATION, {
+  props: ({ mutate }) => ({
+    updateGroup: group =>
+      mutate({
+        variables: { group },
+        update: (store, { data: { updateGroup } }) => {
+          // Read data from our cache for this query
+          sotre.writeFragment({
+            id: `Group:${updateGroup.id}`,
+            fragment: gql`
+              fragment group on Group {
+                unreadCount
+              }
+            `,
+            data: {
+              __typename: 'Group',
+              unreadCount: 0,
+            },
+          });
+        },
+      }),
+  }),
+});
+
 export default compose(
   groupQuery,
   createMessageMutation,
+  updateGroupMutation,
 )(Messages);

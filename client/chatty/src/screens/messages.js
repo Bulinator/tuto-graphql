@@ -198,7 +198,7 @@ class Messages extends Component {
       }
   }
 
-  keyExtractor = item => item.id;
+  keyExtractor = item => item.node.id;
 
   send(text) {
     this.props.createMessage({

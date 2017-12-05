@@ -1,39 +1,43 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import {
   TextInput,
   View,
 } from 'react-native';
-import { Button } from 'react-native-elements';
+import { Icon } from 'react-native-elements';
 
 const styles = {
   container: {
     alignSelf: 'flex-end',
-    backgroundColor: '#f5f1ee',
+    backgroundColor: 'transparent',
     borderColor: '#dbdbdb',
     borderTopWidth: 1,
     flexDirection: 'row',
   },
   inputContainer: {
     flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    paddingLeft: 5,
   },
   input: {
     backgroundColor: 'white',
-    borderColor: '#dbdbdb',
+    borderColor: '#D4D4D4',
     borderRadius: 15,
     borderWidth: 1,
     color: 'black',
-    height: 32,
-    paddingHorizontal: 8,
+    height: 35,
+    marginTop: 2,
+    paddingHorizontal: 10,
   },
   sendButtonContainer: {
-    paddingRight: 12,
-    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButton: {
-    height: 32,
-    width: 32,
+    height: 20,
+    width: 20,
+    backgroundColor: '#128C7E',
   },
   iconStyle: {
     marginRight: 0, // default is 12
@@ -41,10 +45,14 @@ const styles = {
 };
 
 const sendButton = send => (
-  <Button
-    icon={{ name: 'send-o', type: 'font-awesome' }}
+  <Icon
+    raised
+    reverse
+    name="send"
+    type="font-awesome"
+    color="#128C7E"
+    size={16}
     onPress={send}
-    size={12}
   />
 );
 
@@ -70,6 +78,7 @@ class MessageInput extends Component {
             onChangeText={text => this.setState({ text })}
             style={styles.input}
             placeholder="Type your message here!"
+            underlineColorAndroid="transparent"
           />
         </View>
         <View style={styles.sendButtonContainer}>
@@ -80,8 +89,8 @@ class MessageInput extends Component {
   }
 }
 
-//MessageInput.propTypes = {
-//  send: PropTypes.func.isRequired,
-//};
+MessageInput.propTypes = {
+  send: PropTypes.func.isRequired,
+};
 
 export default MessageInput;

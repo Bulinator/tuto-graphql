@@ -24,7 +24,7 @@ const styles = {
     },
   },
   myMessage: {
-    backgroundColor: '#dcf8c6',
+    backgroundColor: '#DCF8C6',
   },
   messageUsername: {
     color: 'red',
@@ -50,8 +50,8 @@ class Message extends PureComponent {
         {isCurrentUser ?
           <View style={styles.messageSpacer} /> : undefined }
 
-        <View key={message.id} style={[styles.message, isCurrentUser && styles.myMessage]}>
-          <Text style={[styles.messageusername, { color }]}>
+        <View style={[styles.message, isCurrentUser && styles.myMessage]}>
+          <Text style={[styles.messageUsername, { color }]}>
             {message.from.username}
           </Text>
           <Text>{message.text}</Text>

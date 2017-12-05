@@ -75,10 +75,10 @@ const fakeData = () => _.times(100, i => ({
   },
 }));
 
-function isDuplicateMessage(newMessage, existingMessages) {
-  return newMessage.id !== null &&
-    existingMessages.some(message => newMessage.id === message.id);
-}
+// function isDuplicateMessage(newMessage, existingMessages) {
+// return newMessage.id !== null &&
+// existingMessages.some(message => newMessage.id === message.id);//
+// }
 
 class Messages extends Component {
   static navigationOptions = ({ navigation }) => {
@@ -212,9 +212,10 @@ class Messages extends Component {
 
   renderItem = ({ item: edge }) => {
     const message = edge.node;
+    const userColor = this.state.usernameColors[message.from.username];
     return (
       <Message
-        color={this.state.usernameColors[message.from.username]}
+        color={userColor || randomColor()} // {}
         isCurrentUser={message.from.id === 1} // until we add auth
         message={message}
       />
@@ -236,12 +237,12 @@ class Messages extends Component {
         <KeyboardAvoidingView
           behavior="position"
           contentContainerStyle={styles.container}
-          keyboardVerticalOffset={64}
+          keyboardVerticalOffset={(Platform.OS === 'android') ? 74 : 64}
           style={styles.container}
         >
           <FlatList
-            ref={(ref) => { this.flatList = ref; }}
             inverted
+            ref={(ref) => { this.flatList = ref; }}
             data={group.messages.edges}
             keyExtractor={this.keyExtractor}
             renderItem={this.renderItem}
@@ -346,9 +347,6 @@ const groupQuery = graphql(GROUP_QUERY, {
 // We know the shape of the data we expect to receive from the server,
 // so why not fake it until we get a response? react-apollo lets us accomplish this
 // by adding an optimisticResponse parameter to mutate
-
-
-
 const createMessageMutation = graphql(CREATE_MESSAGE_MUTATION, {
   props: ({ mutate }) => ({
     createMessage: ({ text, userId, groupId }) =>
@@ -382,9 +380,9 @@ const createMessageMutation = graphql(CREATE_MESSAGE_MUTATION, {
             },
           });
 
-          /* useless
-          if (isDuplicateMessage(createMessage, data.group.messages)) {
-            return data;
+          /* randomly buggy, error on function
+          if (isDuplicateMessage(createMessage, groupData.group.messages)) {
+            return groupData;
           }
           */
           // Add our message from the mutation to the end

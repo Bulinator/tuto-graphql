@@ -80,10 +80,17 @@ export const Schema = [`
     deleteGroup(id: Int!): Group
   }
 
+  type Subscription {
+    # Subscription fires on every message added
+    # for any of the groups with one of these groupIds
+    messageAdded(userId: Int, groupIds: [Int]): Message
+  }
+
   # return query
   schema {
     query: Query
     mutation: Mutation
+    subscription: Subscription
   },
 `];
 

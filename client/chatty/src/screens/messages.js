@@ -122,7 +122,6 @@ class Messages extends Component {
 
     this.state = {
       usernameColors,
-      refreshing: false,
     };
 
     this.renderItem = this.renderItem.bind(this);
@@ -206,7 +205,7 @@ class Messages extends Component {
       userId: 1, // fake user for now
       text,
     }).then(() => {
-      this.flatList.scrollToEnd({ index: 0, animated: true });
+      this.flatList.scrollToIndex({ index: 1, animated: true });
     });
   }
 

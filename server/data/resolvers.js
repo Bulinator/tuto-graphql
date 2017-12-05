@@ -132,7 +132,7 @@ export const Resolvers = {
 
       return Message.findAll({
         where,
-        order: [['createdAt', 'DESC']],
+        order: [['id', 'DESC']],
         limit: first || last,
       }).then((messages) => {
         const edges = messages.map(message => ({

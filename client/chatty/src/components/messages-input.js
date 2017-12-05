@@ -19,6 +19,7 @@ const styles = {
     alignSelf: 'center',
     justifyContent: 'center',
     paddingLeft: 5,
+    paddingRight: 5,
   },
   input: {
     backgroundColor: 'white',
@@ -59,7 +60,9 @@ const sendButton = send => (
 class MessageInput extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      canBeSend: false,
+    };
     this.send = this.send.bind(this);
   }
 

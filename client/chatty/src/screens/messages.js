@@ -205,7 +205,7 @@ class Messages extends Component {
       userId: 1, // fake user for now
       text,
     }).then(() => {
-      this.flatList.scrollToIndex({ index: 1, animated: true });
+      this.flatList.scrollToEnd({ index: 0, animated: true });
     });
   }
 

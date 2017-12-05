@@ -63,6 +63,17 @@ class MessageInput extends Component {
     this.send = this.send.bind(this);
   }
 
+  onChangeText(text) {
+    if (text.length > 0) {
+      this.setState({
+        canBeSend: true,
+        text,
+      });
+    } else {
+      this.setState({ canBeSend: false });
+    }
+  }
+
   send() {
     this.props.send(this.state.text);
     this.textInput.clear();
@@ -75,15 +86,18 @@ class MessageInput extends Component {
         <View style={styles.inputContainer}>
           <TextInput
             ref={(ref) => { this.textInput = ref; }}
-            onChangeText={text => this.setState({ text })}
+            onChangeText={text => this.onChangeText(text)}
             style={styles.input}
             placeholder="Type your message here!"
             underlineColorAndroid="transparent"
           />
         </View>
-        <View style={styles.sendButtonContainer}>
-          {sendButton(this.send)}
-        </View>
+        {this.state.canBeSend ?
+          <View style={styles.sendButtonContainer}>
+            {sendButton(this.send)}
+          </View>
+          : null
+        }
       </View>
     );
   }

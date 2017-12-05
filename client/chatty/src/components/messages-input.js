@@ -20,6 +20,7 @@ const styles = {
     justifyContent: 'center',
     paddingLeft: 5,
     paddingRight: 5,
+    paddingBottom: 3,
   },
   input: {
     backgroundColor: 'white',

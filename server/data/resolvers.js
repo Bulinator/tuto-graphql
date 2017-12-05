@@ -1,5 +1,6 @@
 import GraphQLDate from 'graphql-date';
 import { withFilter } from 'graphql-subscriptions';
+import { map } from 'lodash';
 import { Group, Message, User } from './connectors';
 import { pubsub } from '../subscriptions';
 

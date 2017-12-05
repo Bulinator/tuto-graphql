@@ -75,7 +75,7 @@ const fakeData = () => _.times(100, i => ({
   },
 }));
 
-// function isDuplicateMessage(newMessage, existingMessages) {
+//function isDuplicateMessage(newMessage, existingMessages) {
 // return newMessage.id !== null &&
 // existingMessages.some(message => newMessage.id === message.id);//
 // }
@@ -151,6 +151,13 @@ class Messages extends Component {
           },
           updateQuery: (previousResult, { subscriptionData }) => {
             const newMessage = subscriptionData.data.messageAdded;
+            // if it's our own mutation
+            // we might get the subscription result
+            // after the mutation result.
+            // if (isDuplicateMessage(newMessage, previousResult.group.messages)) {
+            //  return previousResult;
+            // }
+
             return update(previousResult, {
               group: {
                 messages: {

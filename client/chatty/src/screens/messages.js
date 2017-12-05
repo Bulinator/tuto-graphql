@@ -19,12 +19,15 @@ import moment from 'moment';
 import gql from 'graphql-tag';
 import { Icon } from 'react-native-elements';
 
+import { wsClient } from '../../App';
 import Message from '../components/messages';
 import MessageInput from '../components/messages-input';
 import USER_QUERY from '../graphql/user.query';
 import GROUP_QUERY from '../graphql/group.query';
 import CREATE_MESSAGE_MUTATION from '../graphql/create-message.mutation';
 import UPDATE_GROUP_MUTATION from '../graphql/update-group.mutation';
+
+import MESSAGE_ADDED_SUBSCRIPTION from '../graphql/message-added.subscription';
 
 import ColorHelpers from '../helpers/ColorHelpers';
 
@@ -137,6 +140,35 @@ class Messages extends Component {
             this.state.usernameColors[user.username] || randomColor();
         });
       }
+
+      // we don't resubscribe on changed props
+      // because it never happens in our app
+      if (!this.subscription) {
+        this.subscription = nextProps.subscribeToMore({
+          document: MESSAGE_ADDED_SUBSCRIPTION,
+          variables: {
+            userId: 1, // fake the user for now
+            groupIds: [nextProps.navigation.state.params.groupId],
+          },
+          updateQuery: (previousResult, { subscriptionData }) => {
+            const newMessage = subscriptionData.data.messageAdded;
+            return update(previousResult, {
+              group: {
+                messages: {
+                  edges: {
+                    $unshift: [{
+                      __typename: 'MessageEdge',
+                      node: newMessage,
+                      cursor: Buffer.from(newMessage.id.toString()).toString('base64'),
+                    }],
+                  },
+                },
+              },
+            });
+          },
+        });
+      }
+
       // update state
       this.setState({
         usernameColors,
@@ -241,6 +273,7 @@ Messages.propTypes = {
   }),
   loading: PropTypes.bool,
   loadMoreEntries: PropTypes.func,
+  subscribeToMore: PropTypes.func,
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -251,9 +284,10 @@ const groupQuery = graphql(GROUP_QUERY, {
       first: ITEMS_PER_PAGE,
     },
   }),
-  props: ({ data: { fetchMore, loading, group } }) => ({
+  props: ({ data: { fetchMore, loading, group, subscribeToMore } }) => ({
     loading,
     group,
+    subscribeToMore,
     loadMoreEntries() {
       return fetchMore({
       // query: ... (you can specify a different query.

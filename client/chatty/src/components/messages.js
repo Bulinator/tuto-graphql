@@ -50,7 +50,7 @@ class Message extends PureComponent {
         {isCurrentUser ?
           <View style={styles.messageSpacer} /> : undefined }
 
-        <View style={[styles.message, isCurrentUser && styles.myMessage]}>
+        <View key={message.id} style={[styles.message, isCurrentUser && styles.myMessage]}>
           <Text style={[styles.messageusername, { color }]}>
             {message.from.username}
           </Text>

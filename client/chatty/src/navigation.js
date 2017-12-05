@@ -12,6 +12,8 @@ import {
   TabNavigator,
 } from 'react-navigation';
 
+import { wsClient } from '../App';
+
 import Groups from './screens/groups';
 import NewGroup from './screens/new-group';
 import FinalizeGroup from './screens/finalize-group';
@@ -106,6 +108,14 @@ class AppWithNavigationState extends Component {
       if (this.messagesSubscription) {
         this.messagesSubscription();
       }
+      // clear event subscription
+      if (this.reconnected) {
+        this.reconnected();
+      }
+    } else if (!this.reconnected) {
+      this.reconnected = wsClient.onReconnected(() => {
+        this.props.refetch(); // check for any data lost during disconnect
+      }, this);
     }
     if (nextProps.user &&
       (!this.props.user || nextProps.user.groups.length !== this.props.user.groups.length)) {
@@ -138,6 +148,7 @@ const AppWithNavigationState = ({ dispatch, nav }) => (
 AppWithNavigationState.propTypes = {
   dispatch: PropTypes.func.isRequired,
   nav: PropTypes.object.isRequired,
+  refetch: PropTypes.func,
   subscribeToGroups: PropTypes.func,
   subscribeToMessages: PropTypes.func,
   user: PropTypes.shape({
@@ -158,9 +169,10 @@ const mapStateToProps = state => ({
 
 const userQuery = graphql(USER_QUERY, {
   options: () => ({ variables: { id: 1 } }), // fake the user for now
-  props: ({ data: { loading, user, subscribeToMore } }) => ({
+  props: ({ data: { loading, user, refetch, subscribeToMore } }) => ({
     loading,
     user,
+    refetch,
     subscribeToMessages() {
       return subscribeToMore({
         document: MESSAGE_ADDED_SUBSCRIPTION,

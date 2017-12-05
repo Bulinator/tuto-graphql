@@ -13,7 +13,7 @@ import AppWithNavigationState, { navigationReducer } from './src/navigation';
 const GRAPHQL_URL = '192.168.1.3:8080';
 // graphql endpointURL
 const networkInterface = createNetworkInterface({ uri: `http://${GRAPHQL_URL}/graphql` });
-const wsClient = new SubscriptionClient(`ws://${GRAPHQL_URL}/subscriptions`, {
+export const wsClient = new SubscriptionClient(`ws://${GRAPHQL_URL}/subscriptions`, {
   reconnect: true,
   connectionParams: {
     // Pass any arguments you want for initialization

@@ -169,10 +169,18 @@ class Messages extends Component {
         });
       }
 
+      if (!this.reconnected) {
+        this.reconnected = wsClient.onReconnected(() => {
+          this.props.refetch(); // Check for any data lost during disconnect
+        }, this);
+      }
+
       // update state
       this.setState({
         usernameColors,
       });
+    } else if (this.reconnected) {
+      this.reconnected(); // remove event subscription
     }
   }
 

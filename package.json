@@ -30,7 +30,7 @@
     "graphql": "^0.11.7",
     "graphql-date": "^1.0.3",
     "graphql-server-express": "^1.2.0",
-    "graphql-subscriptions": "^0.4.2",
+    "graphql-subscriptions": "^0.5.5",
     "graphql-tag": "^2.5.0",
     "graphql-tools": "^2.9.0",
     "lodash": "^4.17.4",
@@ -41,6 +41,6 @@
     "redux-devtools-extension": "^2.13.2",
     "sequelize": "^4.23.1",
     "sqlite3": "^3.1.13",
-    "subscriptions-transport-ws": "^0.7.1"
+    "subscriptions-transport-ws": "^0.9.4"
   }
 }

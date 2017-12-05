@@ -1,5 +1,10 @@
 import GraphQLDate from 'graphql-date';
+import { withFilter } from 'graphql-subscriptions';
 import { Group, Message, User } from './connectors';
+import { pubsub } from '../subscriptions';
+
+const MESSAGE_ADDED_TOPIC = 'messageAdded';
+const GROUP_ADDED_TOPIC = 'groupAdded';
 
 export const Resolvers = {
   Date: GraphQLDate,
@@ -36,6 +41,10 @@ export const Resolvers = {
         userId,
         text,
         groupId,
+      }).then((message) => {
+        // publish subscription notification with the whole message
+        pubsub.publish(MESSAGE_ADDED_TOPIC, { [MESSAGE_ADDED_TOPIC]: message });
+        return message;
       });
     },
     createGroup(_, { name, userIds, userId }) {
@@ -46,7 +55,13 @@ export const Resolvers = {
             users: [user, ...friends],
           })
             .then(group => group.addUsers([user, ...friends])
-              .then(() => group),
+              .then((res) => {
+                // append the user list to the group object
+                // to pass to pubsub so we can check members
+                group.users = [user, ...friends];
+                pubsub.publish(GROUP_ADDED_TOPIC, { [GROUP_ADDED_TOPIC]: group });
+                return group;
+              }),
             ),
           ),
         );
@@ -71,6 +86,30 @@ export const Resolvers = {
         .then(group => group.update({ name }));
     },
   },
+  Subscription: {
+    messageAdded: {
+      // The subscription payload is the message
+      subscribe: withFilter(() => pubsub.asyncIterator(MESSAGE_ADDED_TOPIC), (payload, args) => {
+        return Boolean(
+          args.groupIds &&
+          ~args.groupIds.indexOf(payload.messageAdded.groupId) &&
+          args.userId !== payload.messageAdded.userId, // do not send to user creating message
+        );
+      }),
+    },
+    groupAdded: {
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(GROUP_ADDED_TOPIC),
+        (payload, args) => {
+          return Boolean(
+            args.userId &&
+            ~map(payload.groupAdded.users, 'id').indexOf(args.userId) &&
+            args.userId !== payload.groupAdded.users[0].id, // do not send to user creating group
+          );
+        },
+      ),
+    },
+  },
   Group: {
     users(group) {
       return group.getUsers();
@@ -93,7 +132,7 @@ export const Resolvers = {
 
       return Message.findAll({
         where,
-        order: [['id', 'DESC']],
+        order: [['createdAt', 'DESC']],
         limit: first || last,
       }).then((messages) => {
         const edges = messages.map(message => ({

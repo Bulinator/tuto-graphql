@@ -1,6 +1,7 @@
 import { _ } from 'lodash';
 import Sequelize from 'sequelize';
 import faker from 'faker';
+import bcrypt from 'bcrypt';
 
 // init database
 const db = new Sequelize('chatty', null, null, {
@@ -51,10 +52,10 @@ db.sync({ force: true }).then(() => _.times(GROUPS, () => GroupModel.create({
   name: faker.lorem.words(3),
 }).then(group => _.times(USERS_PER_GROUP, () => {
   const password = faker.internet.password();
-  return group.createUser({
+  return bcrypt.hash(password, 10).then(hash => group.createUser({
     email: faker.internet.email(),
     username: faker.internet.userName(),
-    password,
+    password: hash,
   }).then((user) => {
     console.log(
       '{email, username, password}',
@@ -66,7 +67,7 @@ db.sync({ force: true }).then(() => _.times(GROUPS, () => GroupModel.create({
       text: faker.lorem.sentences(3),
     }));
     return user;
-  });
+  }));
 })).then((userPromises) => {
   // make users friends with all users in the group
   Promise.all(userPromises).then((users) => {

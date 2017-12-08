@@ -1,8 +1,12 @@
 import GraphQLDate from 'graphql-date';
 import { withFilter } from 'graphql-subscriptions';
 import { map } from 'lodash';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
 import { Group, Message, User } from './connectors';
 import { pubsub } from '../subscriptions';
+import { JWT_SECRET } from '../config';
 
 const MESSAGE_ADDED_TOPIC = 'messageAdded';
 const GROUP_ADDED_TOPIC = 'groupAdded';
@@ -85,6 +89,52 @@ export const Resolvers = {
     updateGroup(_, { id, name }) {
       return Group.findOne({ where: { id } })
         .then(group => group.update({ name }));
+    },
+    login(_, { email, password }, ctx) {
+      // find userByEmail
+      return User.findOne({ where: { email } })
+        .then((user) => {
+          if (user) {
+            // validate password
+            return bcrypt.compare(password, user.password)
+              .then((res) => {
+                if (res) {
+                  // Create json web token
+                  const token = jwt.sign({
+                    id: user.id,
+                    email: user.email,
+                  }, JWT_SECRET);
+                  user.jwt = token;
+                  ctx.user = Promise.resolve(user);
+                  return user;
+                }
+
+                return Promise.errors('password incorrect dude');
+              });
+          }
+          return Promise.errors('email not found');
+        });
+    },
+    signup(_, { email, password, username, }, ctx) {
+      // find userByEmail
+      return User.findOne({ where: { email } }).then((existing) => {
+        if (!existing) {
+          // Hash password and create user
+          return bcrypt.hash(password, 10).then(hash => User.create({
+            email,
+            password: hash,
+            username: username || email,
+          })).then((user) => {
+            const { id } = user;
+            const token = jwt.sign({ id, email }, JWT_SECRET);
+            user.jwt = token;
+            ctx.user = Promise.resolve(user);
+            return user;
+          });
+        }
+        // email already exist
+        return Promise.error('Email already exists. Please use another one!');
+      });
     },
   },
   Subscription: {

@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { Group, Message, User } from './connectors';
 import { pubsub } from '../subscriptions';
 import { JWT_SECRET } from '../config';
-import { messageLogic } from './logic';
+import { groupLogic, messageLogic, userLogic } from './logic';
 
 const MESSAGE_ADDED_TOPIC = 'messageAdded';
 const GROUP_ADDED_TOPIC = 'groupAdded';
@@ -24,8 +24,9 @@ export const Resolvers = {
     },
   },
   Query: {
-    group(_, args) {
-      return Group.find({ where: args });
+    group(_, args, ctx) {
+      //return Group.find({ where: args });
+      return groupLogic.query(_, args, ctx); // after added group logic in logic file
     },
     messages(_, args) {
       return Message.findAll({
@@ -37,8 +38,9 @@ export const Resolvers = {
         limit: 10,
       });
     },
-    user(_, args) {
-      return User.findOne({ where: args });
+    user(_, args, ctx) {
+      //return User.findOne({ where: args });
+      return userLogic.query(_, args, ctx);
     },
   },
   Mutation: {
@@ -51,6 +53,11 @@ export const Resolvers = {
         });
     },
     createGroup(_, { name, userIds, userId }) {
+      return groupLogic.createGroup(_, args, ctx).then((group) => {
+        pubsub.publish(GROUP_ADDED_TOPIC, { [GROUP_ADDED_TOPIC]: group });
+        return group;
+      });
+      /*
       return User.findOne({ where: { id: userId } })
         .then(user => user.getFriends({ where: { id: { $in: userIds } } })
           .then(friends => Group.create({
@@ -68,25 +75,35 @@ export const Resolvers = {
             ),
           ),
         );
+      */
     },
-    deleteGroup(_, {  id }) {
+    deleteGroup(_, args, ctx) {
+      return groupLogic.deleteGroup(_, args, ctx);
+      /*
       return Group.find({ where: id })
         .then(group => group.getUsers()
           .then(users => group.removeUsers(users))
           .then(() => Message.destroy({ where: { groupId: group.id } }))
           .then(() => group.destroy()),
         );
+      */
     },
-    leaveGroup(_, { id, userId }) {
+    leaveGroup(_, args, ctx) {
+      return groupLogic.leaveGroup(_, args, ctx);
+      /*
       return Group.findOne({ where: id })
         .then((group) => {
           group.removeUser(userId);
           return { id };
         });
+      */
     },
-    updateGroup(_, { id, name }) {
+    updateGroup(_, args, ctx) {
+      return groupLogic.updateGroup(_, args, ctx);
+      /*
       return Group.findOne({ where: { id } })
         .then(group => group.update({ name }));
+      */
     },
     login(_, { email, password }, ctx) {
       // find userByEmail
@@ -101,6 +118,7 @@ export const Resolvers = {
                   const token = jwt.sign({
                     id: user.id,
                     email: user.email,
+                    version: user.version,
                   }, JWT_SECRET);
                   user.jwt = token;
                   ctx.user = Promise.resolve(user);
@@ -122,9 +140,10 @@ export const Resolvers = {
             email,
             password: hash,
             username: username || email,
+            version: 1,
           })).then((user) => {
             const { id } = user;
-            const token = jwt.sign({ id, email }, JWT_SECRET);
+            const token = jwt.sign({ id, email, version: 1 }, JWT_SECRET);
             user.jwt = token;
             ctx.user = Promise.resolve(user);
             return user;
@@ -137,109 +156,65 @@ export const Resolvers = {
   },
   Subscription: {
     messageAdded: {
-      // The subscription payload is the message
-      subscribe: withFilter(() => pubsub.asyncIterator(MESSAGE_ADDED_TOPIC), (payload, args) => {
-        return Boolean(
-          args.groupIds &&
-          ~args.groupIds.indexOf(payload.messageAdded.groupId) &&
-          args.userId !== payload.messageAdded.userId, // do not send to user creating message
-        );
-      }),
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(MESSAGE_ADDED_TOPIC),
+        (payload, args, ctx) => {
+          return ctx.user.then((user) => {
+            return Boolean(
+              args.groupIds &&
+              ~args.groupIds.indexOf(payload.messageAdded.groupId) &&
+              user.id !== payload.messageAdded.userId, // don't send to user creating message
+            );
+          });
+        },
+      ),
     },
     groupAdded: {
       subscribe: withFilter(
         () => pubsub.asyncIterator(GROUP_ADDED_TOPIC),
-        (payload, args) => {
-          return Boolean(
-            args.userId &&
-            ~map(payload.groupAdded.users, 'id').indexOf(args.userId) &&
-            args.userId !== payload.groupAdded.users[0].id, // do not send to user creating group
-          );
+        (payload, args, ctx) => {
+          return ctx.user.then((user) => {
+            return Boolean(
+              args.userId &&
+              ~map(payload.groupAdded.users, 'id').indexOf(args.userId) &&
+              user.id !== payload.groupAdded.users[0].id, // don't send to user creating group
+            );
+          });
         },
       ),
     },
   },
   Group: {
-    users(group) {
-      return group.getUsers();
+    users(group, args, ctx) {
+      return groupLogic.users(group, args, ctx);
     },
-    messages(group, { first, last, before, after }) {
-      // base query -- get messages from the right group
-      const where = { groupId: group.id };
-
-      // because we return messages from newest -> oldest
-      // before actually means newer (id > cursor)
-      // after actually means older (id < cursor)
-      if (before) {
-        // convert base-64 to utf8 id
-        where.id = { $gt: Buffer.from(before, 'base64').toString() };
-      }
-
-      if (after) {
-        where.id = { $lt: Buffer.from(after, 'base64').toString() };
-      }
-
-      return Message.findAll({
-        where,
-        order: [['id', 'DESC']],
-        limit: first || last,
-      }).then((messages) => {
-        const edges = messages.map(message => ({
-          cursor: Buffer.from(message.id.toString()).toString('base64'), // convert id to cursor
-          node: message, // the node is the message itself
-        }));
-        return {
-          edges,
-          pageInfo: {
-            hasNextPage() {
-              if (messages.length < (last || first)) {
-                return Promise.resolve(false);
-              }
-
-              return Message.findOne({
-                where: {
-                  groupId: group.id,
-                  id: {
-                    [before ? '$gt' : '$lt']: messages[messages.length - 1].id,
-                  },
-                },
-                order: [['id', 'DESC']],
-              }).then(message => !!message);
-            },
-            hasPreviousPage() {
-              return Message.findOne({
-                where: {
-                  groupId: group.id,
-                  id: where.id,
-                },
-                order: [['id']],
-              }).then(message => !!message);
-            },
-          },
-        };
-      });
+    messages(group, args, ctx) {
+      return groupLogic.messages(group, args, ctx);
     },
   },
   Message: {
-    to(message) {
-      return message.getGroup();
+    to(message, args, ctx) {
+      return messageLogic.to(message, args, ctx);
     },
-    from(message) {
-      return message.getUser();
+    from(message, args, ctx) {
+      return messageLogic.from(message, args, ctx);
     },
   },
   User: {
-    messages(user) {
-      return Message.findAll({
-        where: { userId: user.id },
-        order: [['createdAt', 'DESC']],
-      });
+    email(user, args, ctx) {
+      return userLogic.email(user, args, ctx);
     },
-    groups(user) {
-      return user.getGroups();
+    friends(user, args, ctx) {
+      return userLogic.friends(user, args, ctx);
     },
-    friends(user) {
-      return user.getFriends();
+    groups(user, args, ctx) {
+      return userLogic.groups(user, args, ctx);
+    },
+    jwt(user, args, ctx) {
+      return userLogic.jwt(user, args, ctx);
+    },
+    messages(user, args, ctx) {
+      return userLogic.messages(user, args, ctx);
     },
   },
 };

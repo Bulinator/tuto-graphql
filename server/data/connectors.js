@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 const db = new Sequelize('chatty', null, null, {
   dialect: 'sqlite',
   storage: './chatty.sqlite',
-  logging: true,
+  logging: false,
 });
 
 // define groups
@@ -25,6 +25,7 @@ const UserModel = db.define('user', {
   email: { type: Sequelize.STRING },
   username: { type: Sequelize.STRING },
   password: { type: Sequelize.STRING },
+  version: { type: Sequelize.INTEGER }, // version the password
 });
 
 // users belogns to multiple groups
@@ -56,6 +57,7 @@ db.sync({ force: true }).then(() => _.times(GROUPS, () => GroupModel.create({
     email: faker.internet.email(),
     username: faker.internet.userName(),
     password: hash,
+    //version: 1,
   }).then((user) => {
     console.log(
       '{email, username, password}',

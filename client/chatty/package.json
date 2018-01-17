@@ -21,6 +21,9 @@
     "react-redux": "^5.0.6",
     "redux": "^3.7.2",
     "redux-devtools-extension": "^2.13.2",
+    "redux-persist": "^5.4.0",
+    "redux-thunk": "^2.2.0",
+    "seamless-immutable": "^7.1.2",
     "subscriptions-transport-ws": "^0.7.1"
   },
   "devDependencies": {

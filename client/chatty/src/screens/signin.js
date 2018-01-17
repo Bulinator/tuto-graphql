@@ -9,7 +9,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
+import ColorHelpers from '../helpers/ColorHelpers';
 
 const styles = StyleSheet.create({
   container: {
@@ -54,7 +56,12 @@ const styles = StyleSheet.create({
 
 class Signin extends Component {
   static navigationOptions = {
-    title: 'Chatty',
+    title: 'Chats Dev App',
+    headerStyle: {
+      marginTop: (Platform.OS === 'android') ? 24 : 0,
+      backgroundColor: ColorHelpers.bgHeaderColor,
+      paddingRight: 5,
+    },
     headerLeft: null,
   };
   constructor(props) {

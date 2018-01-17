@@ -87,6 +87,8 @@ const formatCreatedAt = createdAt => moment(createdAt).calendar(null, {
 });
 
 const LOGO_URL = 'https://www.shareicon.net/data/2016/08/01/640324_logo_512x512.png';
+// We will fake sign in for now
+let IS_SIGNED_IN = false;
 
 class Group extends Component {
   constructor(props) {
@@ -181,6 +183,14 @@ class Groups extends Component {
     // faking unauthorized status
   }
 
+  componentDidMount() {
+    if (!IS_SIGNED_IN) {
+      IS_SIGNED_IN = true;
+      const { navigate } = this.props.navigation;
+      navigate('Signin');
+    }
+  }
+
   keyExtractor = item => item.id;
 
   goToMessages(group) {
@@ -257,6 +267,7 @@ Groups.propTypes = {
 };
 
 const userQuery = graphql(USER_QUERY, {
+  skip: ownProps => true, // fake it -- we'll use ownProps with auth
   options: () => ({ variables: { id: 1 } }), // fake user for now
   props: ({ data: { loading, networkStatus, refetch, user } }) => ({
     loading, networkStatus, refetch, user,

@@ -31,7 +31,7 @@ const networkInterfaceWithSubscriptions = addGraphQLSubscriptions(
   wsClient,
 );
 // finally, create appoloClient instance with the modified network interface
-const client = new ApolloClient({
+export const client = new ApolloClient({
   networkInterface: networkInterfaceWithSubscriptions,
 });
 

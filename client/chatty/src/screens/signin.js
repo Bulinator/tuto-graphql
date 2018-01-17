@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Button,
   StyleSheet,
@@ -11,6 +12,14 @@ import {
   View,
   Platform,
 } from 'react-native';
+import { graphql, compose } from 'react-apollo';
+import { connect } from 'react-redux';
+
+import {
+  setCurrentUser,
+} from '../actions/auth.actions';
+import LOGIN_MUTATION from '../graphql/login.mutation';
+import SIGNUP_MUTATION from '../graphql/signup.mutation';
 import ColorHelpers from '../helpers/ColorHelpers';
 
 const styles = StyleSheet.create({
@@ -54,6 +63,10 @@ const styles = StyleSheet.create({
   },
 });
 
+function capitalizeFirstLetter(string) {
+  return string[0].toUpperCase() + string.slice(1);
+}
+
 class Signin extends Component {
   static navigationOptions = {
     title: 'Chats Dev App',
@@ -73,23 +86,60 @@ class Signin extends Component {
     this.signup = this.signup.bind(this);
     this.switchView = this.switchView.bind(this);
   }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.auth.jwt) {
+      nextProps.navigation.goBack();
+    }
+  }
+
   // fake for now
   login() {
+    const { email, password } = this.state;
     console.log('logging in');
     this.setState({ loading: true });
-    setTimeout(() => {
-      console.log('signing up');
-      this.props.navigation.goBack();
-    }, 1000);
+
+    this.props.login({ email, password })
+      .then(({ data: { login: user } }) => {
+        this.props.dispatch(setCurrentUser(user));
+        this.setState({
+          loading: false,
+        });
+      }).catch((error) => {
+        this.setState({
+          loading: false,
+        });
+        Alert.alert(
+          `${capitalizeFirstLetter(this.state.view)} error`, error.message, [
+            { text: 'OK', onPress: () => console.log('OK pressed') }, // esling-disabel-line no console
+            { text: 'OK', onPress: () => console.log('OK pressed'), style: 'cancel' }
+          ],
+        );
+      });
   }
+
   // fake for now
   signup() {
-    console.log('signing up');
     this.setState({ loading: true });
-    setTimeout(() => {
-      this.props.navigation.goBack();
-    }, 1000);
+
+    this.props.signup({ email, password })
+      .then(({ data: { signup: user } }) => {
+        this.props.dispatch(setCurrentUser(user));
+        this.setState({
+          loading: false,
+        });
+      }).catch((error) => {
+        this.setState({
+          loading: false,
+        });
+        Alert.alert(
+          `${capitalizeFirstLetter(this.state.view)} error`, error.message, [
+            { text: 'OK', onPress: () => console.log('OK pressed') }, // esling-disabel-line no console
+          ],
+        );
+      });
   }
+
   switchView() {
     this.setState({
       view: this.state.view === 'signup' ? 'login' : 'signup',
@@ -123,7 +173,7 @@ class Signin extends Component {
           onPress={this[view]}
           style={styles.submit}
           title={view === 'signup' ? 'Sign up' : 'Login'}
-          disabled={this.state.loading}
+          disabled={this.state.loading || !!this.props.auth.jwt}
         />
         <View style={styles.switchContainer}>
           <Text>
@@ -147,6 +197,45 @@ Signin.propTypes = {
   navigation: PropTypes.shape({
     goBack: PropTypes.func,
   }),
+  auth: PropTypes.shape({
+    loading: PropTypes.bool,
+    jwt: PropTypes.string,
+  }),
+  dispatch: PropTypes.func.isRequired,
+  login: PropTypes.func.isRequired,
+  signup: PropTypes.func.isRequired,
 };
 
-export default Signin;
+// We attached auth from our Redux store to Signin via connect(mapStateToProps).
+// When we sign up or log in, we call the associated mutation (signup or login),
+// receive the JWT and id, and dispatch the data with setCurrentUser.
+// In componentWillReceiveProps, once auth.jwt exists, we are logged in and pop the Screen.
+// We’ve also included some simple error messages if things go wrong.
+
+const login = graphql(LOGIN_MUTATION, {
+  props: ({ mutate }) => ({
+    login: ({ email, password }) =>
+      mutate({
+        variables: { email, password },
+      }),
+  }),
+});
+
+const signup = graphql(SIGNUP_MUTATION, {
+  props: ({ mutate }) => ({
+    signup: ({ email, password }) =>
+      mutate({
+        variables: { email, password },
+      }),
+  }),
+});
+
+const mapStateToProps = ({ auth }) => ({
+  auth,
+});
+
+export default compose(
+  login,
+  signup,
+  connect(mapStateToProps),
+)(Signin);

@@ -112,7 +112,7 @@ class Signin extends Component {
         Alert.alert(
           `${capitalizeFirstLetter(this.state.view)} error`, error.message, [
             { text: 'OK', onPress: () => console.log('OK pressed') }, // esling-disabel-line no console
-            { text: 'OK', onPress: () => console.log('OK pressed'), style: 'cancel' }
+            { text: 'Forgot password', onPress: () => console.log('Forgot Pressed'), style: 'cancel' }
           ],
         );
       });

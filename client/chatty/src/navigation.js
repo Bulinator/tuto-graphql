@@ -6,13 +6,13 @@ import { graphql, compose } from 'react-apollo';
 import update from 'immutability-helper';
 import { map } from 'lodash';
 import { Buffer } from 'buffer';
+import { REHYDRATE } from 'redux-persist/constants';
 import {
   addNavigationHelpers,
   StackNavigator,
   TabNavigator,
+  NavigationActions,
 } from 'react-navigation';
-
-import { wsClient } from '../App';
 
 import Groups from './screens/groups';
 import NewGroup from './screens/new-group';
@@ -20,10 +20,13 @@ import FinalizeGroup from './screens/finalize-group';
 import GroupDetails from './screens/group-details';
 import Messages from './screens/messages';
 import Signin from './screens/signin';
+import Settings from './screens/settings';
 
 import { USER_QUERY } from './graphql/user.query';
 import MESSAGE_ADDED_SUBSCRIPTION from './graphql/message-added.subscription';
 import GROUP_ADDED_SUBSCRIPTION from './graphql/group-added.subscription';
+
+import { wsClient } from '../App';
 
 const styles = {
   container: {
@@ -54,7 +57,7 @@ const TestScreen = title => () => (
 // (probably CSSha@ck for android)
 const MainScreenNavigator = TabNavigator({
   Chats: { screen: Groups },
-  Settings: { screen: TestScreen('Settings') },
+  Settings: { screen: TestScreen('settings') },
 }, {
   tabBarOptions: {
     style: {
@@ -91,6 +94,27 @@ const initialNavState = AppNavigator.router.getStateForAction(tempNavState);
 export const navigationReducer = (state = initialNavState, action) => {
   let nextState;
   switch (action.type) {
+    case REHYDRATE:
+      // convert persisted data to Immutable and confirm rehydratation
+      if (!action.payload.auth || !action.payload.auth.jwt) {
+        const { routes, index } = state;
+        if (routes[index].routeName !== 'Signin') {
+          nextState = AppNavigator.router.getStateForAction(
+            NavigationActions.navigate({ routeName: 'Signin' }),
+            state,
+          );
+        }
+      }
+      break;
+    case 'LOGOUT':
+      const { routes, index } = state;
+      if (routes[index].routeName !== 'Signin') {
+        nextState = AppNavigator.router.getStateForAction(
+          NavigationActions.navigate({ routeName: 'Signin' }),
+          state,
+        );
+      }
+      break;
     default:
       nextState = AppNavigator.router.getStateForAction(action, state);
       break;
@@ -170,7 +194,7 @@ const mapStateToProps = state => ({
 });
 
 const userQuery = graphql(USER_QUERY, {
-  skip: ownProps => true, // fake it, we will use ownProps with auth
+  skip: ownProps => !ownProps.auth || !ownProps.auth.jwt,
   options: () => ({ variables: { id: 1 } }), // fake the user for now
   props: ({ data: { loading, user, refetch, subscribeToMore } }) => ({
     loading,

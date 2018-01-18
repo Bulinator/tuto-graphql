@@ -184,6 +184,7 @@ class Groups extends Component {
   }
 
   componentDidMount() {
+    console.log(IS_SIGNED_IN);
     if (!IS_SIGNED_IN) {
       IS_SIGNED_IN = true;
       const { navigate } = this.props.navigation;
@@ -267,7 +268,7 @@ Groups.propTypes = {
 };
 
 const userQuery = graphql(USER_QUERY, {
-  skip: ownProps => true, // fake it -- we'll use ownProps with auth
+  skip: ownProps => !ownProps.auth || !ownProps.auth.jwt, // fake it -- we'll use ownProps with auth
   options: () => ({ variables: { id: 1 } }), // fake user for now
   props: ({ data: { loading, networkStatus, refetch, user } }) => ({
     loading, networkStatus, refetch, user,

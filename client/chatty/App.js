@@ -34,6 +34,7 @@ networkInterface.use([{
     // for auth errors and log out the user if necessary
     const jwt = store.getState().auth.jwt;
     if (jwt) {
+      console.log('jwt: ', jwt);
       req.options.headers.authorization = `Bearer ${jwt}`;
     }
     next();

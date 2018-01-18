@@ -40,6 +40,7 @@ networkInterface.use([{
   },
 }]);
 
+// afterware for response
 networkInterface.useAfter([{
   applyAfterware({ response }, next) {
     if (!response.ok) {
@@ -65,12 +66,15 @@ networkInterface.useAfter([{
     }
   }
 }]);
-
+// Create webSocket client
 export const wsClient = new SubscriptionClient(`ws://${GRAPHQL_URL}/subscriptions`, {
   reconnect: true,
-  connectionParams: {
+  connectionParams() {
     // Pass any arguments you want for initialization
+    // Get authentication token from local storage if it exists
+    return { jwt: store.getState().auth.jwt };
   },
+  lazy: true, // (on-demand) connect to our WebSocket
 });
 // extends network interface with websocket
 const networkInterfaceWithSubscriptions = addGraphQLSubscriptions(
